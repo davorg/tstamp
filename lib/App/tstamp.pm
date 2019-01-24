@@ -7,13 +7,28 @@ use Time::Piece;
 use Getopt::Long;
 use File::Basename;
 
+use Moo;
+use Types::Standard qw[Bool Str];
+
 our $VERSION = '0.0.1';
 
-sub new {
-  return bless {}, shift;
-}
+has utc => (
+  is => 'ro',
+  isa => Bool,
+  default => sub { 0 },
+  required => 1,
+);
 
-sub run {
+has format => (
+  is => 'ro',
+  isa => Str,
+  default => sub { '%Y-%m-%dT%H:%M:%S' },
+  required => 1,
+);
+
+around BUILDARGS => sub {
+  my ($orig, $class, @args) = @_;
+
   GetOptions(
     'format:s' => \(my $format),
     'utc'      => \(my $utc),
@@ -24,11 +39,18 @@ sub run {
   version() if $version;
   usage()   if $help;
 
-  $format //= '%Y-%m-%dT%H:%M:%S';
+  return $class->$orig({
+    utc => $utc,
+    format => $format,
+  });
+};
+
+sub run {
+  my $self = shift;
 
   while (<>) {
-    my $now = $utc ? gmtime : localtime;
-    print $now->strftime($format) . ": $_";
+    my $now = $self->utc ? gmtime : localtime;
+    print $now->strftime($self->format) . ": $_";
   }
 }
 
