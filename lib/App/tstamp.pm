@@ -8,7 +8,7 @@ use Getopt::Long;
 use File::Basename;
 
 use Moo;
-use Types::Standard qw[Bool Str];
+use Types::Standard qw[Bool Int Str];
 
 our $VERSION = '0.0.1';
 
@@ -26,23 +26,42 @@ has format => (
   required => 1,
 );
 
+has pause => (
+  is => 'ro',
+  isa => Int,
+  default => sub { 0 },
+  required => 1,
+);
+
 around BUILDARGS => sub {
   my ($orig, $class, @args) = @_;
 
-  GetOptions(
-    'format:s' => \(my $format),
-    'utc'      => \(my $utc),
-    'help'     => \(my $help),
-    'version'  => \(my $version),
-  );
+  if (@args) {
+    return $class->$orig(@args);
+  } else {
+    my %opts;
 
-  version() if $version;
-  usage()   if $help;
+    GetOptions(
+      \%opts,
+      'format:s',
+      'pause:i',
+      'utc',
+      'help',
+      'version',
+    );
 
-  return $class->$orig({
-    utc => $utc,
-    format => $format,
-  });
+    version() if $opts{version};
+    usage()   if $opts{help};
+
+    delete @opts{qw[version help]};
+
+    my $obj = {};
+    for (keys %opts) {
+      $obj->{$_} = $opts{$_} if defined $opts{$_};
+    }
+
+    return $class->$orig($obj);
+  }
 };
 
 sub run {
@@ -51,6 +70,7 @@ sub run {
   while (<>) {
     my $now = $self->utc ? gmtime : localtime;
     print $now->strftime($self->format) . ": $_";
+    sleep $self->pause if $self->pause;
   }
 }
 
