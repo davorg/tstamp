@@ -10,7 +10,7 @@ use File::Basename;
 use Moo;
 use Types::Standard qw[Bool Int Str];
 
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
 has utc => (
   is => 'ro',
@@ -48,10 +48,12 @@ around BUILDARGS => sub {
       'utc',
       'help',
       'version',
-    );
+    ) or die "\n";
 
     version() if $opts{version};
     usage()   if $opts{help};
+
+    exit 0    if $opts{version} || $opts{help};
 
     delete @opts{qw[version help]};
 
@@ -86,8 +88,6 @@ sub version {
 END_OF_VERSION
 
   print $version;
-
-  exit 0;
 }
 
 sub usage {
@@ -96,7 +96,7 @@ sub usage {
 
   my $usage = <<"END_OF_USAGE";
 
-  $me \[--format=<strftime_format>] [--utc] [--help]
+  $me \[--format=<strftime_format>] [--utc] [--pause[=secs]] [--help] [--version]
 
 * --format
   Define the format of the timestamp using a strftime-style
@@ -106,14 +106,19 @@ sub usage {
   Use UTC for the timestamp. Default is to use your local
   time zone.
 
+* --pause
+  Add a pause between lines in the output. Takes an optional number of seconds
+  as an argument and defaults to one second.
+
 * --help
   Display this help message.
+
+* --version
+  Display the current version.
 
 END_OF_USAGE
 
   print $usage;
-
-  exit 0;
 }
 
 1;
