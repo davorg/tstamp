@@ -1,78 +1,42 @@
-package App::tstamp;
+use v5.38;
+use feature 'class';
+no warnings 'experimental::class';
 
-use strict;
-use warnings;
+class App::tstamp;
+
+our $VERSION = '0.1.0';
 
 use Time::Piece;
 use Getopt::Long;
 use File::Basename;
 
-use Moo;
-use Types::Standard qw[Bool Int Str];
+# use Moo;
+# use Types::Standard qw[Bool Int Str];
 
-our $VERSION = '0.0.2';
+field $utc :param = 0;
+field $format :param = '%Y-%m-%dT%H:%M:%S';
+field $pause :param = 0;
 
-has utc => (
-  is => 'ro',
-  isa => Bool,
-  default => sub { 0 },
-  required => 1,
-);
+ADJUST {
+  my ($help, $version);
 
-has format => (
-  is => 'ro',
-  isa => Str,
-  default => sub { '%Y-%m-%dT%H:%M:%S' },
-  required => 1,
-);
-
-has pause => (
-  is => 'ro',
-  isa => Int,
-  default => sub { 0 },
-  required => 1,
-);
-
-around BUILDARGS => sub {
-  my ($orig, $class, @args) = @_;
-
-  if (@args) {
-    return $class->$orig(@args);
-  } else {
-    my %opts;
-
-    GetOptions(
-      \%opts,
-      'format:s',
-      'pause:i',
-      'utc',
-      'help',
-      'version',
+  GetOptions(
+      'format:s' => \$format,
+      'pause:i' => \$pause,
+      'utc' => \$utc,
+      'help' => \$help,
+      'version' => \$version,
     ) or die "\n";
 
-    version() if $opts{version};
-    usage()   if $opts{help};
+    version() if $version;
+    usage()   if $help;
+}
 
-    exit 0    if $opts{version} || $opts{help};
-
-    delete @opts{qw[version help]};
-
-    my $obj = {};
-    for (keys %opts) {
-      $obj->{$_} = $opts{$_} if defined $opts{$_};
-    }
-
-    return $class->$orig($obj);
-  }
-};
-
-sub run {
-  my $self = shift;
-
+method run {
   while (<>) {
-    my $now = $self->utc ? gmtime : localtime;
-    print $now->strftime($self->format) . ": $_";
-    sleep $self->pause if $self->pause;
+    my $now = $utc ? gmtime : localtime;
+    print $now->strftime($format) . ": $_";
+    sleep $pause if $pause;
   }
 }
 
